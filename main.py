@@ -41,7 +41,22 @@ def main():
         os.makedirs(out_dir, exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as handle:
         handle.write(ENTRY)
-    print("wrote %d characters to %s" % (len(ENTRY), OUTPUT_PATH))
+    # Read the file back and verify it round-trips: the gate reads the
+    # bytes on disk, not the string in memory, so check those bytes.
+    with open(OUTPUT_PATH, "rb") as handle:
+        on_disk = handle.read()
+    try:
+        written = on_disk.decode("utf-8")
+    except UnicodeDecodeError:
+        print("gate check failed: file on disk is not UTF-8", file=sys.stderr)
+        return 1
+    if written != ENTRY or check_entry(written):
+        print("gate check failed: file on disk differs from entry", file=sys.stderr)
+        return 1
+    print(
+        "wrote %d characters (%d bytes) to %s"
+        % (len(ENTRY), len(on_disk), OUTPUT_PATH)
+    )
     return 0
 
 
